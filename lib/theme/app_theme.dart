@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF6366F1);
-  static const Color secondaryColor = Color(0xFF8B5CF6);
+  // ChatGPT-like colors
+  static const Color primaryColor = Color(0xFF10A37F); // ChatGPT green
+  static const Color secondaryColor = Color(0xFF0D8C6D);
   static const Color accentColor = Color(0xFF06B6D4);
   
-  // Dark theme colors
-  static const Color darkBackground = Color(0xFF0F0F23);
-  static const Color darkSurface = Color(0xFF1A1A2E);
-  static const Color darkCard = Color(0xFF16213E);
+  // Dark theme colors - ChatGPT dark style
+  static const Color darkBackground = Color(0xFF171717);
+  static const Color darkSurface = Color(0xFF2D2D3A);
+  static const Color darkCard = Color(0xFF343541);
   
   // Light theme colors
-  static const Color lightBackground = Color(0xFFF8FAFC);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightCard = Color(0xFFF1F5F9);
+  static const Color lightBackground = Color(0xFFFFFFFF);
+  static const Color lightSurface = Color(0xFFF7F7F8);
+  static const Color lightCard = Color(0xFFE9E9EB);
 
   static ThemeData get darkTheme {
     return ThemeData(
@@ -31,22 +32,22 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: darkBackground,
       cardColor: darkCard,
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       appBarTheme: AppBarTheme(
         backgroundColor: darkSurface,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 20,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
       ),
       cardTheme: CardThemeData(
         color: darkCard,
-        elevation: 4,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -70,8 +71,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
-          elevation: 4,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -100,13 +101,13 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: lightBackground,
       cardColor: lightCard,
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
       appBarTheme: AppBarTheme(
         backgroundColor: lightSurface,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 20,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
@@ -114,9 +115,9 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: lightCard,
-        elevation: 2,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -140,8 +141,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
-          elevation: 2,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

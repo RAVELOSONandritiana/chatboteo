@@ -1,38 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="ChatBoteo - AI Chatbot Application powered by Puter.ai">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="chatbot">
+  <meta name="apple-mobile-web-app-title" content="ChatBoteo">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>chatbot</title>
+  <title>ChatBoteo - AI Chatbot</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Puter.js Library -->
+  <script src="https://js.puter.ai/v1/puter.js"></script>
+  
+  <!-- Loading spinner -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #171717;
+    }
+    .flutter-loader {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      border: 4px solid #10A37F;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
+  <div class="flutter-loader"></div>
   <script src="flutter_bootstrap.js" async></script>
+  
+  <!-- Puter.js Bridge for Flutter -->
+  <script>
+    // Global Puter.js chat function
+    window.puterChat = async function(message, history) {
+      try {
+        // Build conversation context from history
+        const messages = [];
+        
+        // Add system prompt
+        messages.push({
+          role: 'system',
+          content: 'You are ChatBoteo, a helpful and friendly AI assistant. You are knowledgeable in many topics including programming, science, history, mathematics, and general knowledge. You provide clear, concise, and accurate responses. Always be polite and respectful. Your responses are friendly and conversational.'
+        });
+        
+        // Add history messages
+        if (history && Array.isArray(history)) {
+          history.forEach(function(msg) {
+            messages.push({
+              role: msg.isUser ? 'user' : 'assistant',
+              content: msg.content
+            });
+          });
+        }
+        
+        // Add current user message
+        messages.push({
+          role: 'user',
+          content: message
+        });
+        
+        // Call Puter.js AI
+        const response = await puter.ai.chat(messages);
+        return response;
+      } catch (error) {
+        console.error('Puter.js Error:', error);
+        return 'I apologize, but I encountered an error processing your request. Please try again.';
+      }
+    };
+    
+    // Initialize Puter.js
+    window.initPuter = async function() {
+      try {
+        await puter.setAIEndpoint('https://api.puter.ai');
+        console.log('Puter.js initialized successfully');
+        return true;
+      } catch (error) {
+        console.error('Puter.js initialization error:', error);
+        return false;
+      }
+    };
+    
+    // Initialize on load
+    window.initPuter();
+  </script>
 </body>
 </html>
