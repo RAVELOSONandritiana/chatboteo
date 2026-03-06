@@ -52,26 +52,37 @@
   
   <!-- Puter.js Bridge for Flutter -->
   <script>
-    // Global Puter.js chat function
+    // Global async function to handle chat with Puter.js
     window.puterChat = async function(message, history) {
+      console.log('Puter.js chat called with message:', message);
+      
       try {
-        // Build conversation context from history
+        // Check if puter is available
+        if (typeof puter === 'undefined') {
+          console.error('Puter.js not loaded');
+          return 'Error: Puter.js library not loaded. Please refresh the page.';
+        }
+
+        // Build conversation context
         const messages = [];
         
         // Add system prompt
         messages.push({
           role: 'system',
-          content: 'You are ChatBoteo, a helpful and friendly AI assistant. You are knowledgeable in many topics including programming, science, history, mathematics, and general knowledge. You provide clear, concise, and accurate responses. Always be polite and respectful. Your responses are friendly and conversational.'
+          content: 'You are ChatBoteo, a helpful and friendly AI assistant. Be concise and helpful.'
         });
         
-        // Add history messages
+        // Add history messages if available
         if (history && Array.isArray(history)) {
-          history.forEach(function(msg) {
-            messages.push({
-              role: msg.isUser ? 'user' : 'assistant',
-              content: msg.content
-            });
-          });
+          for (let i = 0; i < history.length; i++) {
+            const msg = history[i];
+            if (msg && msg.content) {
+              messages.push({
+                role: msg.isUser ? 'user' : 'assistant',
+                content: msg.content
+              });
+            }
+          }
         }
         
         // Add current user message
@@ -80,29 +91,41 @@
           content: message
         });
         
-        // Call Puter.js AI
+        console.log('Sending to Puter.ai with messages:', messages.length);
+        
+        // Call Puter.js AI using the chat method
         const response = await puter.ai.chat(messages);
-        return response;
+        
+        console.log('Puter.js response:', response);
+        
+        if (response && response.text) {
+          return response.text;
+        } else if (typeof response === 'string') {
+          return response;
+        } else {
+          console.error('Unexpected response format:', response);
+          return 'I received an unexpected response. Please try again.';
+        }
+        
       } catch (error) {
         console.error('Puter.js Error:', error);
-        return 'I apologize, but I encountered an error processing your request. Please try again.';
+        return 'I apologize, but I encountered an error: ' + error.message + '. Please try again.';
       }
     };
     
-    // Initialize Puter.js
-    window.initPuter = async function() {
-      try {
-        await puter.setAIEndpoint('https://api.puter.ai');
-        console.log('Puter.js initialized successfully');
-        return true;
-      } catch (error) {
-        console.error('Puter.js initialization error:', error);
-        return false;
-      }
-    };
-    
-    // Initialize on load
-    window.initPuter();
+    // Check if Puter.js loaded successfully
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (typeof puter !== 'undefined') {
+          console.log('Puter.js loaded successfully');
+          // Initialize puter with default settings
+          puter.setAIEndpoint('https://api.puter.ai');
+        } else {
+          console.warn('Puter.js failed to load');
+        }
+      }, 1000);
+    });
   </script>
 </body>
 </html>
+
