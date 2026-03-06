@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:js' show context, JsObject;
+import 'dart:js' show context, JsObject, allowInterop;
 import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
