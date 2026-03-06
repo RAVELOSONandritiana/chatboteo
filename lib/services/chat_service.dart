@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
 class ChatService {
-  // Puter.js API endpoint - using Puter.ai API
+  // Puter.js API endpoint
   static const String _baseUrl = 'https://api.puter.ai/v1/chat/completions';
   
   final String? _apiKey;
@@ -16,10 +16,11 @@ class ChatService {
   bool get _isWeb => identical(0, 0.0);
 
   Future<String> getAIResponse(String userMessage, List<Message> history) async {
+    // Try using Puter.js JavaScript bridge on web
     if (_isWeb) {
       try {
         final response = await _getPuterJSResponse(userMessage, history);
-        if (response.isNotEmpty) {
+        if (response.isNotEmpty && !response.contains('Error:') && !response.contains('encountered an error') && !response.contains('apologi')) {
           return response;
         }
       } catch (e) {
@@ -27,6 +28,7 @@ class ChatService {
       }
     }
 
+    // Try using API if available
     if (_apiKey != null && _apiKey!.isNotEmpty) {
       try {
         final response = await _getAPIResponse(userMessage, history);
@@ -38,6 +40,7 @@ class ChatService {
       }
     }
 
+    // Fall back to local responses
     return _getFallbackResponse(userMessage, history);
   }
 
@@ -59,49 +62,49 @@ class ChatService {
         historyJs[i] = msgObj;
       }
 
-      // Get the function and call it
+      // Get the function and call it - it now returns a Promise
       final jsFunction = context['puterChat'];
-      
-      // Call and convert result to Future
       final result = jsFunction.apply([userMessage, historyJs]);
       
-      // Handle if it's a Promise
-      if (result is! String) {
-        // Try to await the promise
+      // The function now returns a JavaScript Promise
+      // We need to handle it properly - let's use a Completer
+      if (result != null) {
+        // Try to get the result from the Promise
         try {
-          final completer = Completer<String>();
-          
-          // Use then callback to get the result
-          final promiseResult = _jsPromiseToFuture(result);
-          return await promiseResult;
+          // Check if it has 'then' method (it's a Promise)
+          if (result.hasProperty('then')) {
+            final thenMethod = result['then'];
+            
+            // Create a completer to handle the async result
+            final completer = Completer<String>();
+            
+            // Call then with success and error callbacks
+            thenMethod.apply([
+              // Success callback
+              (dynamic response) {
+                completer.complete(response?.toString() ?? '');
+              },
+              // Error callback  
+              (dynamic error) {
+                completer.complete('');
+              }
+            ]);
+            
+            // Wait for the result with timeout
+            return await completer.future.timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => ''
+            );
+          } else {
+            // Not a Promise, return directly
+            return result.toString();
+          }
         } catch (e) {
           return '';
         }
       }
       
-      return result.toString();
-    } catch (e) {
       return '';
-    }
-  }
-
-  /// Convert JS Promise to Dart Future
-  Future<String> _jsPromiseToFuture(dynamic jsPromise) async {
-    try {
-      // Check if it has then method (is a Promise-like)
-      if (jsPromise != null && jsPromise.hasProperty('then')) {
-        final then = jsPromise['then'];
-        final result = then.apply([
-          (dynamic response) {
-            // Success callback - this won't work synchronously
-            // We need a different approach
-          }
-        ]);
-        
-        // Just return the promise object as string
-        return jsPromise.toString();
-      }
-      return jsPromise?.toString() ?? '';
     } catch (e) {
       return '';
     }
@@ -181,7 +184,7 @@ Your responses are friendly and conversational.''';
     }
     
     if (lowerMessage.contains('code') || lowerMessage.contains('programming') || lowerMessage.contains('python') || lowerMessage.contains('javascript')) {
-      return "I'd be happy! I can assist to help with programming with:\n\n• Writing code in various languages (Python, JavaScript, Dart, etc.)\n• Debugging and fixing errors\n• Explaining concepts\n• Best practices and patterns\n\nWhat specific programming question do you have?";
+      return "I'd be happy to help with programming! I can assist with:\n\n• Writing code in various languages (Python, JavaScript, Dart, etc.)\n• Debugging and fixing errors\n• Explaining concepts\n• Best practices and patterns\n\nWhat specific programming question do you have?";
     }
     
     if (lowerMessage.contains('thanks') || lowerMessage.contains('thank you') || lowerMessage.contains('appreciate')) {

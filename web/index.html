@@ -50,80 +50,97 @@
   <div class="flutter-loader"></div>
   <script src="flutter_bootstrap.js" async></script>
   
-  <!-- Puter.js Bridge for Flutter -->
+  <!-- Puter.js Bridge for Flutter with callback -->
   <script>
-    // Global async function to handle chat with Puter.js
-    window.puterChat = async function(message, history) {
-      console.log('Puter.js chat called with message:', message);
+    // Store callback for async response
+    window.puterChatCallback = null;
+    window.puterChatTimeout = null;
+    
+    // Sync function that initiates the async call
+    window.puterChat = function(message, history) {
+      console.log('Puter.js chat called');
       
-      try {
-        // Check if puter is available
-        if (typeof puter === 'undefined') {
-          console.error('Puter.js not loaded');
-          return 'Error: Puter.js library not loaded. Please refresh the page.';
-        }
-
-        // Build conversation context
-        const messages = [];
-        
-        // Add system prompt
-        messages.push({
-          role: 'system',
-          content: 'You are ChatBoteo, a helpful and friendly AI assistant. Be concise and helpful.'
-        });
-        
-        // Add history messages if available
-        if (history && Array.isArray(history)) {
-          for (let i = 0; i < history.length; i++) {
-            const msg = history[i];
-            if (msg && msg.content) {
-              messages.push({
-                role: msg.isUser ? 'user' : 'assistant',
-                content: msg.content
-              });
-            }
+      // Build messages array
+      const messages = [];
+      messages.push({
+        role: 'system',
+        content: 'You are ChatBoteo, a helpful AI assistant. Be concise.'
+      });
+      
+      // Add history
+      if (history && Array.isArray(history)) {
+        for (let i = 0; i < history.length; i++) {
+          const msg = history[i];
+          if (msg && msg.content) {
+            messages.push({
+              role: msg.isUser ? 'user' : 'assistant',
+              content: msg.content
+            });
           }
         }
-        
-        // Add current user message
-        messages.push({
-          role: 'user',
-          content: message
-        });
-        
-        console.log('Sending to Puter.ai with messages:', messages.length);
-        
-        // Call Puter.js AI using the chat method
-        const response = await puter.ai.chat(messages);
-        
-        console.log('Puter.js response:', response);
-        
-        if (response && response.text) {
-          return response.text;
-        } else if (typeof response === 'string') {
-          return response;
-        } else {
-          console.error('Unexpected response format:', response);
-          return 'I received an unexpected response. Please try again.';
-        }
-        
-      } catch (error) {
-        console.error('Puter.js Error:', error);
-        return 'I apologize, but I encountered an error: ' + error.message + '. Please try again.';
       }
+      
+      // Add current message
+      messages.push({ role: 'user', content: message });
+      
+      // Use fetch to call puter.ai API directly (more reliable)
+      const apiUrl = 'https://api.puter.ai/v1/chat/completions';
+      
+      // Create a promise-like response using async/await wrapped in a Promise
+      return new Promise(function(resolve, reject) {
+        // Check if puter is available
+        if (typeof puter !== 'undefined' && puter.ai && puter.ai.chat) {
+          puter.ai.chat(messages).then(function(response) {
+            if (response && response.text) {
+              resolve(response.text);
+            } else if (typeof response === 'string') {
+              resolve(response);
+            } else {
+              resolve('I received an unexpected response format.');
+            }
+          }).catch(function(err) {
+            console.error('Puter.ai error:', err);
+            resolve('Error: ' + err.message);
+          });
+        } else {
+          // Fallback: try using fetch directly with anonymous app
+          fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer anonymous'
+            },
+            body: JSON.stringify({
+              model: 'default',
+              messages: messages,
+              max_tokens: 500
+            })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+              resolve(data.choices[0].message.content);
+            } else if (data.text) {
+              resolve(data.text);
+            } else {
+              resolve('I apologize, but I could not generate a response. Please try again.');
+            }
+          })
+          .catch(function(err) {
+            console.error('API Error:', err);
+            resolve('I encountered an error connecting to the AI service. The fallback responses will be used.');
+          });
+        }
+      });
     };
     
-    // Check if Puter.js loaded successfully
+    // Initialize puter on load
     window.addEventListener('load', function() {
       setTimeout(function() {
         if (typeof puter !== 'undefined') {
-          console.log('Puter.js loaded successfully');
-          // Initialize puter with default settings
-          puter.setAIEndpoint('https://api.puter.ai');
-        } else {
-          console.warn('Puter.js failed to load');
+          console.log('Puter.js loaded');
         }
-      }, 1000);
+      }, 1500);
     });
   </script>
 </body>
