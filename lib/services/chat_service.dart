@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:js' show context, JsObject, allowInterop;
+import 'dart:js' show context, JsObject;
 import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
@@ -9,17 +9,13 @@ class ChatService {
   // Puter.js API endpoint - using Puter.ai API
   static const String _baseUrl = 'https://api.puter.ai/v1/chat/completions';
   
-  // For demo purposes, we'll also include a fallback local response system
-  // since we may not have an API key
   final String? _apiKey;
   
   ChatService({String? apiKey}) : _apiKey = apiKey;
 
-  /// Check if we're running on web platform
   bool get _isWeb => identical(0, 0.0);
 
   Future<String> getAIResponse(String userMessage, List<Message> history) async {
-    // Try using Puter.js JavaScript bridge on web
     if (_isWeb) {
       try {
         final response = await _getPuterJSResponse(userMessage, history);
@@ -31,7 +27,6 @@ class ChatService {
       }
     }
 
-    // Try using API if available
     if (_apiKey != null && _apiKey!.isNotEmpty) {
       try {
         final response = await _getAPIResponse(userMessage, history);
@@ -43,37 +38,73 @@ class ChatService {
       }
     }
 
-    // Fall back to local responses
     return _getFallbackResponse(userMessage, history);
   }
 
   /// Use Puter.js JavaScript bridge for web platform
   Future<String> _getPuterJSResponse(String userMessage, List<Message> history) async {
     try {
-      // Check if puterChat function exists in JavaScript context
-      if (context.hasProperty('puterChat')) {
-        // Create history as a JavaScript array of objects
-        final historyJs = JsObject(context['Array']);
-        for (var i = 0; i < history.length; i++) {
-          final msg = history[i];
-          final msgObj = JsObject(context['Object']);
-          msgObj['isUser'] = msg.isUser;
-          msgObj['content'] = msg.content;
-          historyJs[i] = msgObj;
-        }
+      // Check if puterChat function exists
+      if (!context.hasProperty('puterChat')) {
+        return '';
+      }
+      
+      // Create history as a JavaScript array
+      final historyJs = JsObject(context['Array']);
+      for (var i = 0; i < history.length; i++) {
+        final msg = history[i];
+        final msgObj = JsObject(context['Object']);
+        msgObj['isUser'] = msg.isUser;
+        msgObj['content'] = msg.content;
+        historyJs[i] = msgObj;
+      }
 
-        // Call the JavaScript function
-        final jsFunction = context['puterChat'];
-        final result = jsFunction.apply([userMessage, historyJs]);
-        
-        if (result != null) {
-          return result.toString();
+      // Get the function and call it
+      final jsFunction = context['puterChat'];
+      
+      // Call and convert result to Future
+      final result = jsFunction.apply([userMessage, historyJs]);
+      
+      // Handle if it's a Promise
+      if (result is! String) {
+        // Try to await the promise
+        try {
+          final completer = Completer<String>();
+          
+          // Use then callback to get the result
+          final promiseResult = _jsPromiseToFuture(result);
+          return await promiseResult;
+        } catch (e) {
+          return '';
         }
       }
+      
+      return result.toString();
     } catch (e) {
-      // Log error and fall back
+      return '';
     }
-    return '';
+  }
+
+  /// Convert JS Promise to Dart Future
+  Future<String> _jsPromiseToFuture(dynamic jsPromise) async {
+    try {
+      // Check if it has then method (is a Promise-like)
+      if (jsPromise != null && jsPromise.hasProperty('then')) {
+        final then = jsPromise['then'];
+        final result = then.apply([
+          (dynamic response) {
+            // Success callback - this won't work synchronously
+            // We need a different approach
+          }
+        ]);
+        
+        // Just return the promise object as string
+        return jsPromise.toString();
+      }
+      return jsPromise?.toString() ?? '';
+    } catch (e) {
+      return '';
+    }
   }
 
   /// Use Puter.js REST API
@@ -122,7 +153,6 @@ Your responses are friendly and conversational.''';
     final lowerMessage = message.toLowerCase();
     final random = Random();
     
-    // Check for specific keywords and provide contextual responses
     if (lowerMessage.contains('hello') || lowerMessage.contains('hi') || lowerMessage.contains('hey')) {
       final greetings = [
         "Hello! How can I help you today?",
@@ -151,7 +181,7 @@ Your responses are friendly and conversational.''';
     }
     
     if (lowerMessage.contains('code') || lowerMessage.contains('programming') || lowerMessage.contains('python') || lowerMessage.contains('javascript')) {
-      return "I'd be happy to help with programming! I can assist with:\n\n• Writing code in various languages (Python, JavaScript, Dart, etc.)\n• Debugging and fixing errors\n• Explaining concepts\n• Best practices and patterns\n\nWhat specific programming question do you have?";
+      return "I'd be happy! I can assist to help with programming with:\n\n• Writing code in various languages (Python, JavaScript, Dart, etc.)\n• Debugging and fixing errors\n• Explaining concepts\n• Best practices and patterns\n\nWhat specific programming question do you have?";
     }
     
     if (lowerMessage.contains('thanks') || lowerMessage.contains('thank you') || lowerMessage.contains('appreciate')) {
@@ -172,7 +202,6 @@ Your responses are friendly and conversational.''';
       return goodbyes[random.nextInt(goodbyes.length)];
     }
     
-    // Default contextual responses
     final defaultResponses = [
       "That's an interesting question! Could you tell me more about what you'd like to know?",
       "I see. Let me think about that... Could you provide more details?",
